@@ -26,6 +26,12 @@ PAGES_DIR = os.path.join(SCRIPT_DIR, "..", "..", "WEB", "8.1_entertainment", "ar
 
 morph = pymorphy3.MorphAnalyzer()
 
+# Слишком общие леммы, которые дают много ложных ссылок.
+# Для "movie" оставляем кино/фильм и отключаем авто-ссылки по "жанр".
+BLOCKED_SINGLE_LEMMAS_BY_CONCEPT = {
+    "movie": {"жанр"},
+}
+
 
 def load_concepts() -> list[dict]:
     with open(CONCEPTS_PATH, "r", encoding="utf-8") as f:
@@ -54,17 +60,28 @@ def build_form_index(
     отдельно и собирает комбинированный regex.
     Сортировка по убыванию длины паттерна.
     """
-    index = []
+    raw_index: list[tuple[str, str, str, bool, str | None]] = []
+    single_form_concepts: dict[str, set[str]] = {}
+
     for concept in concepts:
         filename = os.path.basename(concept["file"])
+        blocked_single = BLOCKED_SINGLE_LEMMAS_BY_CONCEPT.get(concept["name"], set())
         for lemma in concept["lemmas"]:
             words = lemma.strip().split()
             if len(words) == 1:
+                if words[0].lower() in blocked_single:
+                    continue
                 # Однословная лемма — каждая падежная форма отдельно
                 forms = get_word_forms(words[0])
                 for form in forms:
                     pattern = re.escape(form)
-                    index.append((pattern, concept["name"], filename))
+                    normalized = form.lower()
+                    single_form_concepts.setdefault(normalized, set()).add(
+                        concept["name"]
+                    )
+                    raw_index.append(
+                        (pattern, concept["name"], filename, True, normalized)
+                    )
             else:
                 # Многословная фраза — склоняем каждое слово,
                 # собираем regex вида (форма1|форма2)\s+(форма1|форма2)
@@ -76,14 +93,80 @@ def build_form_index(
                     ]
                     parts.append("(?:" + "|".join(escaped) + ")")
                 pattern = r"\s+".join(parts)
-                index.append((pattern, concept["name"], filename))
+                raw_index.append((pattern, concept["name"], filename, False, None))
+
+    index: list[tuple[str, str, str]] = []
+    for pattern, concept_id, filename, is_single_form, normalized_form in raw_index:
+        # Исключаем неоднозначные однословные формы, которые встречаются
+        # сразу у нескольких понятий (например, "кадров").
+        if is_single_form and normalized_form is not None:
+            if len(single_form_concepts.get(normalized_form, set())) > 1:
+                continue
+        index.append((pattern, concept_id, filename))
+
     # Длинные паттерны первыми — чтобы "образовательная игра" матчилась раньше "игра"
     index.sort(key=lambda x: -len(x[0]))
     return index
 
 
+def build_link_pattern(form_pattern: str) -> re.Pattern:
+    """Собрать regex для безопасного поиска формы вне markdown-ссылок."""
+    return re.compile(
+        r"(?<!\[)(?<!\()"  # не внутри существующей ссылки
+        r"\b(" + form_pattern + r")\b"
+        r"(?!\]|\))",  # не внутри существующей ссылки
+        re.IGNORECASE,
+    )
+
+
+def build_self_word_forms_index(concepts: list[dict]) -> dict[str, set[str]]:
+    """Собрать словоформы отдельных слов из лемм для каждого понятия."""
+    index: dict[str, set[str]] = {}
+    for concept in concepts:
+        forms_for_concept: set[str] = set()
+        for lemma in concept["lemmas"]:
+            for word in lemma.strip().split():
+                forms_for_concept.update(get_word_forms(word))
+        index[concept["name"]] = forms_for_concept
+    return index
+
+
+def ranges_overlap(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    return max(a_start, b_start) < min(a_end, b_end)
+
+
+def get_protected_ranges(
+    line: str,
+    current_concept_id: str,
+    form_index: list,
+    self_word_forms_index: dict[str, set[str]],
+) -> list[tuple[int, int]]:
+    """
+    Найти диапазоны в строке, относящиеся к текущему понятию.
+    Внутри них нельзя ставить ссылки на другие статьи.
+    """
+    ranges = []
+    for form_pattern, concept_id, _ in form_index:
+        if concept_id != current_concept_id:
+            continue
+        pattern = build_link_pattern(form_pattern)
+        for match in pattern.finditer(line):
+            ranges.append((match.start(1), match.end(1)))
+
+    # Дополнительно защищаем отдельные слова из лемм текущего понятия,
+    # чтобы "Жанры [музыки]" не перекидывало на movie из-за "жанр".
+    for form in self_word_forms_index.get(current_concept_id, set()):
+        pattern = build_link_pattern(re.escape(form))
+        for match in pattern.finditer(line):
+            ranges.append((match.start(1), match.end(1)))
+    return ranges
+
+
 def add_crosslinks(
-    text: str, current_concept_id: str, form_index: list
+    text: str,
+    current_concept_id: str,
+    form_index: list,
+    self_word_forms_index: dict[str, set[str]],
 ) -> tuple[str, list[str]]:
     """
     Расставляет ссылки в тексте. Возвращает (новый_текст, список_замен).
@@ -109,13 +192,27 @@ def add_crosslinks(
                 continue
 
             # Ищем форму слова (с границами слов, регистронезависимо)
-            pattern = re.compile(
-                r"(?<!\[)(?<!\()"  # не внутри существующей ссылки
-                r"\b(" + form_pattern + r")\b"
-                r"(?!\]|\))",  # не внутри существующей ссылки
-                re.IGNORECASE,
+            # и не трогаем фрагменты, принадлежащие текущей статье.
+            pattern = build_link_pattern(form_pattern)
+            protected_ranges = get_protected_ranges(
+                lines[line_idx],
+                current_concept_id,
+                form_index,
+                self_word_forms_index,
             )
-            match = pattern.search(lines[line_idx])
+
+            match = None
+            for candidate in pattern.finditer(lines[line_idx]):
+                c_start = candidate.start(1)
+                c_end = candidate.end(1)
+                intersects_self = any(
+                    ranges_overlap(c_start, c_end, p_start, p_end)
+                    for p_start, p_end in protected_ranges
+                )
+                if not intersects_self:
+                    match = candidate
+                    break
+
             if match:
                 original_text = match.group(1)
                 replacement = f"[{original_text}]({filename})"
@@ -126,7 +223,7 @@ def add_crosslinks(
                     + lines[line_idx][match.end() :]
                 )
                 linked_concepts.add(concept_id)
-                changes.append(f"  '{original_text}' → [{original_text}]({filename})")
+                changes.append(f"  '{original_text}' -> [{original_text}]({filename})")
 
     return "\n".join(lines), changes
 
@@ -148,6 +245,7 @@ def main():
 
     concepts = load_concepts()
     form_index = build_form_index(concepts)
+    self_word_forms_index = build_self_word_forms_index(concepts)
 
     print(f"Загружено {len(concepts)} понятий, {len(form_index)} падежных форм")
     print(f"Директория статей: {PAGES_DIR}")
@@ -167,16 +265,21 @@ def main():
         concept = find_concept_by_file(concepts, filename)
 
         if not concept:
-            print(f"⚠ {filename}: не найдено в concepts.json, пропускаю")
+            print(f"WARN {filename}: не найдено в concepts.json, пропускаю")
             continue
 
         with open(filepath, "r", encoding="utf-8") as f:
             original_text = f.read()
 
-        new_text, changes = add_crosslinks(original_text, concept["name"], form_index)
+        new_text, changes = add_crosslinks(
+            original_text,
+            concept["name"],
+            form_index,
+            self_word_forms_index,
+        )
 
         if changes:
-            print(f"📝 {filename} ({concept['name']}): {len(changes)} ссылок")
+            print(f"EDIT {filename} ({concept['name']}): {len(changes)} ссылок")
             for change in changes:
                 print(change)
 
