@@ -56,9 +56,6 @@
 - **Каталитические** — протекают с участием катализатора
 - **Некаталитические** — без катализатора
 
-![Периодическая таблица](https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Colour_18-column_periodic_table%2C_with_Lu_and_Lr_in_group_3.png/800px-Colour_18-column_periodic_table%2C_with_Lu_and_Lr_in_group_3.png)
-*Периодическая система Менделеева — химические свойства элементов периодически повторяются*
-
 ## Энергетика реакций
 
 ### Энтальпия реакции

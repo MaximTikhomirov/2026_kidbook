@@ -55,11 +55,6 @@
 
 ## Лептоны
 
-**Лептоны** — фермионы, не участвующие в [сильном взаимодействии](14_fundamental_interactions.md). Каждому заряженному лептону соответствует нейтрино.
-
-![Нейтринный детектор Super-Kamiokande](https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Super-Kamiokande.jpg/500px-Super-Kamiokande.jpg)
-*Детектор Super-Kamiokande — установка для регистрации нейтрино*
-
 ### Шесть лептонов
 
 | Поколение | Частица | Символ | Заряд | Масса |
