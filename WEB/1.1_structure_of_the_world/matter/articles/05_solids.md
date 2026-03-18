@@ -1,6 +1,6 @@
 # Твёрдые тела
 
-![Кристаллическая структура NaCl](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Sodium-chloride-3D-ionic.png/500px-Sodium-chloride-3D-ionic.png)
+![Кристаллическая структура NaCl](/WEB/1.1_structure_of_the_world/matter/images/Sodium-chloride-3D-ionic.png)
 *Кристаллическая решётка хлорида натрия (NaCl) — пример ионного кристалла*
 
 **Твёрдое тело** — одно из основных агрегатных состояний [материи](01_matter.md), характеризующееся способностью сохранять форму и объём. [Атомы](03_atom_structure.md), ионы или [молекулы](04_molecular_level.md) в твёрдом теле занимают фиксированные положения и совершают лишь колебательные движения вблизи точек равновесия.

@@ -1,6 +1,6 @@
 # Атомизм
 
-![Демокрит — основоположник атомизма](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Democritus2.jpg/400px-Democritus2.jpg)
+![Демокрит — основоположник атомизма](/WEB/1.1_structure_of_the_world/matter/images/400px-Democritus2.jpg)
 
 *Демокрит Абдерский (ок. 460–370 до н. э.) — один из основоположников атомизма*
 

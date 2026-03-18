@@ -1,6 +1,6 @@
 # Элементарные частицы
 
-![Стандартная модель элементарных частиц](https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Standard_Model_of_Elementary_Particles.svg/600px-Standard_Model_of_Elementary_Particles.svg.png)
+![Стандартная модель элементарных частиц](/WEB/1.1_structure_of_the_world/matter/images/Standard_Model_of_Elementary_Particles.svg.png)
 *Стандартная модель элементарных частиц — все известные фундаментальные частицы*
 
 **Элементарные частицы** — фундаментальные, неделимые (в рамках современных знаний) составные части [материи](01_matter.md). Все наблюдаемые формы вещества — от [атомов](03_atom_structure.md) и [молекул](04_molecular_level.md) до звёзд — построены из элементарных частиц, взаимодействующих через [фундаментальные силы](14_fundamental_interactions.md).

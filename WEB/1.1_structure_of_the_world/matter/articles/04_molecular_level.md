@@ -1,6 +1,6 @@
 # Молекулярный уровень
 
-![Модель молекулы воды](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/H2O_2D_labelled.svg/400px-H2O_2D_labelled.svg.png)
+![Модель молекулы воды](/WEB/1.1_structure_of_the_world/matter/images/H2O_2D_labelled.svg.png)
 *Молекула воды (H₂O) — пример ковалентной связи между атомами*
 
 **Молекула** — электрически нейтральная группа из двух или более [атомов](03_atom_structure.md), связанных **химическими связями**. Молекулярный уровень организации [материи](01_matter.md) — это уровень, на котором атомы объединяются в сложные структуры, определяющие [химические](12_chemical_properties.md) и [физические свойства](11_physical_properties.md) веществ.
